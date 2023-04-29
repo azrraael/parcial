@@ -4,21 +4,18 @@
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
 
-<h1>Validar Ticket</h1>
+<h1>Validar Voleta</h1>
 
 
 <form onsubmit={{this.validarTicket}}>
-    <label>Ingresa el código del ticket:</label>
-    <InputNumber class="form-control" @bind-Value="@Id" />
-    <button type="button" class="btn-dark" @onclick="ValidateID">Validar ticket</button>
-    <label>@ticket?.Id</label>
-    <label>@error1</label>
+    <label>Ingresa el código de la boleta:</label>
+    <InputNumber style="width: 280px" class="form-control" @bind-Value="@Id" />
+    <button type="button" style="margin-bottom:20px; margin-top:20px;" class="btn btn-primary" @onclick="ValidateID">Validar boleta</button>
+    
    
 
     @if (ticket is null)
     {
-        <label></label>
-
     }
     else
     {
@@ -26,30 +23,27 @@
         {
            if (ticket.Used)
         {
-            <label>es usada....</label>
+          
 
         }
         else
-        {
-
-            <label>no es usada....</label>
-
+        {          
                 <div class="mb-3">
-                    <label>País:</label>
+                    <label></label>
+                    <label>Porteria:</label>
                     <div>
-                        <select class="form-select" @bind="ticket.Entrance">
-                            <option value="0">-- Seleccione un país --</option>
-                            
-                                    <option value="norte">norte</option>
-                                    <option value="sur">sur</option>
-                            <option value="Oriental">Oriental</option>
-                            <option value="Occidental">Occidental</option>
+                        <select style="margin-top:20px; width: 280px;" class="form-select" @bind="ticket.Entrance">
+                            <option value="" selected disabled>eliga una porteria</option>
+                                    <option value="Norte">Norte</option>
+                                    <option value="Sur">Sur</option>
+                                    <option value="Oriental">Oriental</option>
+                                    <option value="Occidental">Occidental</option>
                         </select>
 
                     </div>
                 </div>
 
-                <button type="button" class="btn-dark" @onclick="actualizarTicket">Validar ticket</button>
+                <button type="button" class="btn btn-success" @onclick="actualizarTicket">Registrar boleta</button>
 
         }  
         }
@@ -62,7 +56,7 @@
     public Ticket? ticket;
     bool valida = false;
     public int Id;
-    public string? error1="";
+    string? date;
     private async Task ValidateID()
     {
         var responseHTTP = await repository.Get<Ticket>($"api/ticket/{Id}");
@@ -71,8 +65,8 @@
         {
             if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                navigationManager.NavigateTo("tickets");
-                error1 = "Boleta no válida";
+                navigationManager.NavigateTo("tickets"); 
+                await ValidarAsync();
                 valida = false;
             }
             else
@@ -84,11 +78,37 @@
         else
         {
             ticket = responseHTTP.Response;
-            error1 = "";
+
             valida = true;
+            if (ticket!.Used)
+            {
+                //date = ticket.Date.ToString()!;
+                date = ticket.Date!.Value.ToString("hh:mm")!;
+                var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+                    {
+
+                       
+                        Title = "Alerta",
+                        Text = "boleta usada a las " + date + " por la porteria " + ticket.Entrance,
+                        Icon = SweetAlertIcon.Question,                     
+                        ConfirmButtonText = "Aceptar"
+                    });
+
+            }
         }
     }
+    private async Task ValidarAsync()
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Error",
+                Text = "boleta no válida!!!",
+                Icon = SweetAlertIcon.Question,
+                ConfirmButtonText = "Aceptar"
+            });
 
+       
+    }
 
     private async Task actualizarTicket()
     {
