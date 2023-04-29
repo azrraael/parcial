@@ -4,28 +4,76 @@
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
 
-<h1>Bienvenido al estadio Atanasio Girardot</h1>
-<img src="https://inghospitalaria.com/wp-content/uploads/2013/07/Logo-INDER-Medellin-2015-png.png" width="50%" height="50%">
+<h1>Validar Ticket</h1>
+
 
 <form onsubmit={{this.validarTicket}}>
     <label>Ingresa el código del ticket:</label>
     <InputNumber class="form-control" @bind-Value="@Id" />
     <button type="button" class="btn-dark" @onclick="ValidateID">Validar ticket</button>
     <label>@ticket?.Id</label>
+    <label>@error1</label>
+   
+
+    @if (ticket is null)
+    {
+        <label></label>
+
+    }
+    else
+    {
+        if (valida)
+        {
+           if (ticket.Used)
+        {
+            <label>es usada....</label>
+
+        }
+        else
+        {
+
+            <label>no es usada....</label>
+
+                <div class="mb-3">
+                    <label>País:</label>
+                    <div>
+                        <select class="form-select" @bind="ticket.Entrance">
+                            <option value="0">-- Seleccione un país --</option>
+                            
+                                    <option value="norte">norte</option>
+                                    <option value="sur">sur</option>
+                            <option value="Oriental">Oriental</option>
+                            <option value="Occidental">Occidental</option>
+                        </select>
+
+                    </div>
+                </div>
+
+                <button type="button" class="btn-dark" @onclick="actualizarTicket">Validar ticket</button>
+
+        }  
+        }
+       
+    }
+
 </form>
 
 @code {
     public Ticket? ticket;
+    bool valida = false;
     public int Id;
+    public string? error1="";
     private async Task ValidateID()
     {
         var responseHTTP = await repository.Get<Ticket>($"api/ticket/{Id}");
 
-    if (responseHTTP.Error)
+        if (responseHTTP.Error)
         {
             if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 navigationManager.NavigateTo("tickets");
+                error1 = "Boleta no válida";
+                valida = false;
             }
             else
             {
@@ -36,7 +84,28 @@
         else
         {
             ticket = responseHTTP.Response;
-           
+            error1 = "";
+            valida = true;
         }
     }
+
+
+    private async Task actualizarTicket()
+    {
+        ticket!.Date= DateTime.Now;
+        ticket.Used = true;
+        var responseHTTP = await repository.Put("api/ticket", ticket);
+
+        if (responseHTTP.Error)
+        {
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+           
+            //navigationManager.NavigateTo("tickets");
+        }
+    }
+
 }
