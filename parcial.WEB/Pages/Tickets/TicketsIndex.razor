@@ -1,52 +1,42 @@
 ﻿@page "/tickets"
 
-
 @inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
 
-<h3>Paises</h3>
-<a class="btn btn-info" href="/countries/details/@country.Id">Detalles</a>
-@if (Tickets is null)
-{
+<h1>Bienvenido al estadio Atanasio Girardot</h1>
+<img src="https://inghospitalaria.com/wp-content/uploads/2013/07/Logo-INDER-Medellin-2015-png.png" width="50%" height="50%">
 
-    <p>Cargando...</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th></th>
-                <th>pais</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (var country in Tickets!)
-            {
-                <tr>
-                    <td>
-                        <a class="btn btn-warning">Editar</a>
-                        <button class="btn btn-danger">Borrar</button>
-                    </td>
-                    <td>
-                        @country.Id
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-}
-
-
-
+<form onsubmit={{this.validarTicket}}>
+    <label>Ingresa el código del ticket:</label>
+    <InputNumber class="form-control" @bind-Value="@Id" />
+    <button type="button" class="btn-dark" @onclick="ValidateID">Validar ticket</button>
+    <label>@ticket?.Id</label>
+</form>
 
 @code {
-    public List<Ticket>? Tickets { get; set; }
-
-    protected async override Task OnInitializedAsync()
+    public Ticket? ticket;
+    public int Id;
+    private async Task ValidateID()
     {
-        var responseHppt = await repository.Get<List<Ticket>>("api/ticket");
-        Tickets = responseHppt.Response!;
+        var responseHTTP = await repository.Get<Ticket>($"api/ticket/{Id}");
+
+    if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("tickets");
+            }
+            else
+            {
+                var messageError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", messageError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            ticket = responseHTTP.Response;
+           
+        }
     }
 }
